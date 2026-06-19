@@ -89,9 +89,12 @@ Write concisely but completely. If something wasn't discussed, write a short neu
 
 The member's name in Circle is **exactly the speaker label** used in the transcript (e.g. "Yuri Kharlamov"). Use this exact name to search.
 
-1. Use `search_community_member` with the member's full name
-2. Identify the correct member from the results
-3. Use `update_community_member` to set or append to their `note` field
+**Important:** The Circle API does NOT expose the admin `note` field — `update_community_member` has no `note` parameter and `community_member_profile_fields` does not contain a note key. Do NOT attempt to write the note via API.
+
+Instead:
+1. Use `get_advanced_search` with `type: "members"` to find the member and confirm their ID
+2. Compose the note text (see format below)
+3. Output the note text in a clearly labelled block so Robert can paste it manually into the Circle admin UI (Audience → member profile → Notes tab)
 
 **Note content:** Write in **English**, concise bullet points. Include:
 - TRIZ level / background
@@ -99,7 +102,7 @@ The member's name in Circle is **exactly the speaker label** used in the transcr
 - Why they joined / their main goal
 - Suggested activation idea (what to invite them to)
 
-Keep the note under 150 words. If the member already has a note, append below a `---` separator with the new interview date as a header.
+Keep the note under 150 words. Start with `Interview YYYY-MM-DD` as a header line.
 
 ## Summary
 
