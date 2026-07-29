@@ -1,18 +1,18 @@
 ---
 name: vorgespraech
-description: Verarbeitet Transkripte von Vorgesprächen (Discovery-/Verkaufsgespräche) zu Schulungen, Workshops, Projekten oder Mitgliedschaften mit Interessenten. Triggert auf "/vorgespraech", "Vorgespräch verarbeiten", "Discovery Call", "Erstgespräch", "Akquisegespräch", oder wenn Robert ein Transkript eines Vor-/Verkaufsgesprächs mit einem Interessenten einfügt. NICHT für bestehende TRIZ-Mastery-Hub-Mitglieder verwenden — dafür ist der Skill member-interview zuständig.
+description: Verarbeitet Transkripte von Vorgesprächen (Discovery-/Verkaufsgespräche) zu Schulungen, Workshops, Projekten oder Mitgliedschaften mit Interessenten. Triggert auf "/vorgespraech", "Vorgespräch verarbeiten", "Discovery Call", "Erstgespräch", "Akquisegespräch", oder wenn Robert ein Transkript oder eine Audioaufnahme (.m4a, .mp3, .wav) eines Vor-/Verkaufsgesprächs mit einem Interessenten übergibt. NICHT für bestehende TRIZ-Mastery-Hub-Mitglieder verwenden — dafür ist der Skill member-interview zuständig.
 version: 1.0.0
 ---
 
 # Vorgespräch Processor
 
-Dieser Skill verarbeitet das Transkript eines Vorgesprächs (Discovery- oder Verkaufsgespräch) mit einem Interessenten zu Schulungen, Workshops, Projekten oder einer Mitgliedschaft. Transkripte können deutsch oder englisch sein. Führe die drei Schritte ohne Rückfrage nacheinander aus.
+Dieser Skill verarbeitet das Transkript eines Vorgesprächs (Discovery- oder Verkaufsgespräch) mit einem Interessenten zu Schulungen, Workshops, Projekten oder einer Mitgliedschaft. Transkripte können deutsch oder englisch sein. Führe die Schritte ohne Rückfrage nacheinander aus — bei einer Audiodatei als Input beginnend mit Schritt 0, sonst mit Schritt 1.
 
 **Abgrenzung:** Dieser Skill ist für Interessenten VOR einem Abschluss/Beitritt. Bestehende TRIZ-Mastery-Hub-Mitglieder werden mit dem Skill `member-interview` verarbeitet (der hat einen zusätzlichen Circle-Schritt). Wichtige Unterschiede zu member-interview: (1) kein Circle-Schritt, (2) eigene Frontmatter-Felder, (3) eigener Ablageort.
 
 ## Input
 
-Zwei Formen:
+Drei Formen:
 
 **Dateipfad** — Robert gibt einen Pfad zum Transkript an:
 ```
@@ -20,6 +20,30 @@ Zwei Formen:
 ```
 
 **Inline** — Robert fügt das Transkript direkt in den Chat ein (mit oder ohne `/vorgespraech`). Wenn im Text oder Kontext kein Datum steht, heutiges Datum für den Dateinamen verwenden.
+
+**Audiodatei** — Robert gibt einen Pfad zu einer Aufnahme statt zu einem Transkript an (`.m4a`, `.mp3`, `.wav`, `.mp4`):
+```
+/vorgespraech /path/to/AndreasNeufing.m4a
+```
+Dann zuerst Schritt 0 ausführen, danach normal weiter mit Schritt 1.
+
+## Schritt 0 — Audio transkribieren (nur bei Audio-Input)
+
+Diesen Schritt überspringen, wenn bereits ein Transkript vorliegt.
+
+Transkription läuft lokal mit Whisper, es wird nichts hochgeladen. Vorher prüfen, ob das CLI da ist (`which whisper`); fehlt es, Robert darauf hinweisen statt einen Ersatzweg zu improvisieren.
+
+```bash
+whisper "<Audiodatei>" --model medium --language de --output_format txt --output_dir "/Users/robert/Documents/TCG-Ordner/_Adunka/Vorgespraeche/"
+```
+
+- **Modell:** `medium` ist der Standard — guter Kompromiss aus Qualität und Laufzeit. Nur auf `large-v3` wechseln, wenn Robert es verlangt oder das Ergebnis erkennbar unbrauchbar ist.
+- **Sprache:** `--language de` bei deutschen Gesprächen, `--language en` bei englischen. Wenn unklar, den Parameter weglassen und Whisper erkennen lassen.
+- **Laufzeit:** auf CPU grob die Länge der Aufnahme bis zum Doppelten davon. Immer im Hintergrund starten und nicht blockierend warten. Vorab mit `ffprobe` die Dauer ermitteln und Robert eine Zeitschätzung nennen.
+- **Ergebnis:** Whisper legt `<Basisname>.txt` im Zielordner ab. Diese Datei ist ab hier das **Roh-Transkript** und geht so in Schritt 1 und 2. In Schritt 2 wird sie auf das Namensschema `..._raw.txt` gebracht; die von Whisper erzeugte Datei danach entfernen, damit im Ordner keine Dublette liegt.
+- **Datum:** Audiodateinamen enthalten meist kein Datum. Dann das Änderungsdatum der Audiodatei als Gesprächsdatum verwenden, sonst heute.
+
+Whisper-Transkripte haben typischerweise keine Sprecherkennung — der Text läuft als ein Block durch. Die Zuordnung der Redebeiträge zu Robert und zum Interessenten passiert dann in Schritt 1 über die Sprecher-Rekonstruktion aus dem Kontext.
 
 ## Schritt 1 — Transkript bereinigen
 
@@ -84,7 +108,7 @@ Kurz aber vollständig schreiben. Wenn etwas nicht besprochen wurde, einen kurze
 
 ## Zusammenfassung
 
-Nach den drei Schritten kurz in einem Absatz berichten:
+Nach den Schritten kurz in einem Absatz berichten:
 - Gespeicherte Dateien (mit Dateinamen)
 - Angelegte Obsidian-Notiz (Dateiname)
-- Aufgetretene Besonderheiten (z. B. Sprecher-Rekonstruktion nötig, Teile entfernt)
+- Aufgetretene Besonderheiten (z. B. Audio transkribiert und mit welchem Modell, Sprecher-Rekonstruktion nötig, Teile entfernt)
