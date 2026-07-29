@@ -1,0 +1,13 @@
+{
+  "name": "claude-skills",
+  "description": "Personal meta-skills for TRIZ prompt and skill development workflow",
+  "version": "1.0.0",
+  "author": {
+    "name": "Robert Adunka",
+    "url": "https://triz-consulting.de"
+  },
+  "homepage": "https://github.com/Robert-Adunka/claude-skills",
+  "repository": "https://github.com/Robert-Adunka/claude-skills",
+  "license": "MIT",
+  "keywords": ["triz", "prompt", "skill", "review", "workflow"]
+}
