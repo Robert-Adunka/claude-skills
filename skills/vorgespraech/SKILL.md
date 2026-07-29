@@ -34,16 +34,23 @@ Diesen Schritt überspringen, wenn bereits ein Transkript vorliegt.
 Transkription läuft lokal mit Whisper, es wird nichts hochgeladen. Vorher prüfen, ob das CLI da ist (`which whisper`); fehlt es, Robert darauf hinweisen statt einen Ersatzweg zu improvisieren.
 
 ```bash
-whisper "<Audiodatei>" --model medium --language de --output_format txt --output_dir "/Users/robert/Documents/TCG-Ordner/_Adunka/Vorgespraeche/"
+whisper "<Audiodatei>" --model large-v3-turbo --language de --output_format srt --output_dir "/Users/robert/Documents/TCG-Ordner/_Adunka/Vorgespraeche/"
 ```
 
-- **Modell:** `medium` ist der Standard — guter Kompromiss aus Qualität und Laufzeit. Nur auf `large-v3` wechseln, wenn Robert es verlangt oder das Ergebnis erkennbar unbrauchbar ist.
+- **Modell:** immer `large-v3-turbo`. Es liegt lokal im Cache (`~/.cache/whisper/`), liefert bessere Qualität als `medium` und ist ähnlich schnell. `medium` **nicht** verwenden: es ist nicht im Cache, und der Nachladeversuch scheitert auf diesem Rechner an der Zertifikatsprüfung (`CERTIFICATE_VERIFY_FAILED`, selbstsigniertes Zertifikat in der Kette).
+- **Zeitstempel:** immer `--output_format srt`. Die Zeitmarken werden gebraucht, weil die bestehenden `_corrected`-Dateien das Format `Sprechername / mm:ss / Text` haben und ohne Timecodes eine Lücke entsteht.
 - **Sprache:** `--language de` bei deutschen Gesprächen, `--language en` bei englischen. Wenn unklar, den Parameter weglassen und Whisper erkennen lassen.
-- **Laufzeit:** auf CPU grob die Länge der Aufnahme bis zum Doppelten davon. Immer im Hintergrund starten und nicht blockierend warten. Vorab mit `ffprobe` die Dauer ermitteln und Robert eine Zeitschätzung nennen.
-- **Ergebnis:** Whisper legt `<Basisname>.txt` im Zielordner ab. Diese Datei ist ab hier das **Roh-Transkript** und geht so in Schritt 1 und 2. In Schritt 2 wird sie auf das Namensschema `..._raw.txt` gebracht; die von Whisper erzeugte Datei danach entfernen, damit im Ordner keine Dublette liegt.
+- **Laufzeit:** auf CPU grob die Länge der Aufnahme bis zum Doppelten davon. Immer im Hintergrund starten und nicht blockierend warten. Vorab mit `ffprobe` die Dauer ermitteln und Robert eine Zeitschätzung nennen. Whisper puffert seine Ausgabe, wenn sie nicht auf ein Terminal geht — solange nichts in der Logdatei steht, heißt das nicht, dass der Lauf hängt.
+- **Ergebnis:** Whisper legt `<Basisname>.srt` im Zielordner ab. Diese Datei ist ab hier das **Roh-Transkript** und geht so in Schritt 1 und 2. In Schritt 2 wird sie auf `..._raw.txt` umbenannt (der SRT-Inhalt bleibt darin unverändert stehen, inklusive Zeitmarken); die von Whisper erzeugte Datei danach entfernen, damit im Ordner keine Dublette liegt.
 - **Datum:** Audiodateinamen enthalten meist kein Datum. Dann das Änderungsdatum der Audiodatei als Gesprächsdatum verwenden, sonst heute.
 
-Whisper-Transkripte haben typischerweise keine Sprecherkennung — der Text läuft als ein Block durch. Die Zuordnung der Redebeiträge zu Robert und zum Interessenten passiert dann in Schritt 1 über die Sprecher-Rekonstruktion aus dem Kontext.
+Whisper-Transkripte haben keine Sprecherkennung — der Text läuft als ein Block durch. Die Zuordnung der Redebeiträge zu Robert und zum Interessenten passiert dann in Schritt 1 über die Sprecher-Rekonstruktion aus dem Kontext. Dabei aus den SRT-Zeitmarken den **Startzeitpunkt jedes Sprecherblocks als `mm:ss`** übernehmen, damit das bereinigte Transkript dasselbe Format hat wie die von Transkriptionsdiensten erzeugten Dateien:
+
+```
+Robert Adunka
+00:19
+So, wunderschönen guten Morgen.
+```
 
 ## Schritt 1 — Transkript bereinigen
 
@@ -54,7 +61,8 @@ Lies das Roh-Transkript. Wende **nur die minimal nötigen Korrekturen** für Spe
 - "Arize", "arise", "a rise", "a riz" → ARIZ
 
 **Personennamen** (phonetische Varianten korrigieren):
-- Varianten → Genrikh Altshuller, Boris Zlotin, Alla Zusman, Valeri Souchkov, Sergei Ikovenko, Zion Bar-El, Nikolai Khomenko, Denis Cavallucci, Oleg Feygenson, Darrell Mann, Karen Gadd
+- Varianten → Genrikh Altshuller, Boris Zlotin, Alla Zusman, Valeri Souchkov, Sergei Ikovenko, Zion Bar-El, Nikolai Khomenko, Denis Cavallucci, Oleg Feygenson, Darrell Mann, Karen Gadd, Pavel Livotov, Christian Thurnes, Oliver Mayer
+- Typische Verhörer: "Lieferthoff", "Livotoff", "Liwotow" → Pavel Livotov; "Thunis", "Thurnis", "Turnes" → Christian Thurnes
 - Firmen-/Methodennamen: "Trismastery Hub"-Varianten → TRIZ Mastery Hub; "Ideasio/Ideation Workbench" → Ideation Workbench; "Kepner Trigo" etc. → Kepner-Tregoe
 
 **Standardfall ist die leichte Korrektur oben.** Nur wenn das Transkript es klar erfordert, zusätzlich:
