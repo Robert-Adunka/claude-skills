@@ -45,8 +45,28 @@ Transkription läuft lokal mit WhisperX, es wird nichts hochgeladen. WhisperX li
 ```
 
 - **Warum WhisperX statt `whisper`:** es liefert Sprechertrennung (Diarisierung über pyannote) und satzgenaue Zeitmarken durch Alignment. Das blanke `whisper`-CLI kann beides nicht.
-- **`--vad_method silero` ist Pflicht, nicht Geschmackssache.** WhisperX transkribiert nur, was seine Sprachaktivitätserkennung als Sprache markiert. Die voreingestellte pyannote-VAD schneidet auf Roberts Aufnahmen ganze Passagen weg — bei einer geprüften 26-Minuten-Datei fehlten **22 Prozent des Textes** ersatzlos, darunter inhaltlich wichtige Stellen wie der Name der Geschäftseinheit des Interessenten. Das Absenken von `--vad_onset`/`--vad_offset` behebt es **nicht**; Silero schon. Ohne diesen Schalter ist das Transkript unvollständig, und zwar unauffällig: die Lücken sind im Fließtext nicht zu sehen.
-- **Plausibilitätsprüfung nach dem Lauf:** grob 130 bis 140 Wörter pro Gesprächsminute sind normal. Deutlich weniger heißt, dass die VAD Text verschluckt hat. Im Zweifel gegen einen Lauf des blanken `whisper` gegenprüfen, das keine VAD-Vorfilterung macht.
+- **`--vad_method silero` ist Pflicht, nicht Geschmackssache.** WhisperX transkribiert nur, was seine Sprachaktivitätserkennung als Sprache markiert, und schneidet dabei Text weg. An einer geprüften 26-Minuten-Aufnahme gemessen (blankes `whisper` = 3528 Wörter als Referenz, weil es keine VAD-Vorfilterung macht):
+  - pyannote (Voreinstellung): 2738 Wörter, **22 % fehlen**
+  - pyannote mit abgesenkten `--vad_onset`/`--vad_offset`: bringt nichts
+  - **silero: 3065 Wörter, 13 % fehlen** — deutlich besser, aber nicht vollständig
+
+### Wichtig: WhisperX allein reicht für dieses Skill nicht
+
+Auch mit Silero fehlen rund 13 Prozent, und zwar unauffällig — die Lücken sind im Fließtext nicht zu sehen, der Text liest sich glatt weiter. Bei einem Vorgespräch, das als Aktenlage dient, ist das zu viel. **Deshalb zwei Läufe:**
+
+1. **Blankes `whisper` für den Text** — vollständig, aber ohne Sprecher und mit groben Zeitmarken:
+   ```bash
+   export SSL_CERT_FILE=$(/Library/Frameworks/Python.framework/Versions/3.14/bin/python3 -c "import certifi;print(certifi.where())")
+   whisper "<Audiodatei>" --model large-v3-turbo --language de --output_format txt --output_dir "<Zielordner>"
+   ```
+   Dieses Ergebnis ist das **Roh-Transkript** für Schritt 2 und die Textgrundlage für Schritt 1.
+2. **WhisperX für Sprecher und Zeitmarken** mit dem Befehl oben. Aus diesem Lauf werden **nur** die Sprecherzuordnung und die Zeitstempel übernommen, nie der Text.
+
+Beide Läufe können nacheinander im Hintergrund laufen (zusammen grob eine Stunde bei 26 Minuten Audio). Beim Zusammenführen die Blöcke des bereinigten Textes der Reihe nach gegen die WhisperX-Segmente matchen; für Blöcke ohne Treffer die Zeit zwischen den benachbarten Treffern interpolieren statt hochzuzählen, sonst driftet das Ende weg. **Vor dem Speichern prüfen, dass der Text Wort für Wort unverändert ist** und sich nur Zeitmarken ergänzt haben.
+
+Wenn Robert ausdrücklich nur schnell ein Ergebnis will, reicht der WhisperX-Lauf allein — dann aber dazusagen, dass das Transkript unvollständig ist.
+
+- **Plausibilitätsprüfung nach jedem Lauf:** grob 130 bis 140 Wörter pro Gesprächsminute sind normal. Deutlich weniger heißt, dass Text verschluckt wurde.
 - **Modell:** immer `large-v3-turbo`.
 - **Sprecherzahl:** **Robert vor dem Lauf fragen, wie viele Personen auf der Aufnahme sprechen.** Er kann das nach dem Gespräch sagen, auch wenn es vorher nicht feststand. Regelfall sind zwei, es kommen aber Gespräche mit mehr Teilnehmern vor. Die genannte Zahl in `--min_speakers` und `--max_speakers` eintragen — eine feste Vorgabe verbessert das Ergebnis deutlich. Antwortet er nicht oder ist er unsicher, beide Parameter weglassen und pyannote schätzen lassen; dann aber im Ergebnis prüfen, ob die Zahl der gefundenen Sprecher plausibel ist. **Nicht** auf einen kurzen Ausschnitt anwenden, in dem eine Person kaum spricht: das Clustering teilt dann den dominanten Sprecher in zwei auf, statt den stillen zu finden.
 - **Zugang:** die Diarisierung lädt `pyannote/speaker-diarization-community-1`, ein zugangsbeschränktes Modell. Roberts HuggingFace-Token liegt in `~/.cache/huggingface/`, WhisperX findet ihn selbst. Die Warnung `No --hf_token provided` im Log ist irreführend und kann ignoriert werden, solange der Lauf weiterläuft.
