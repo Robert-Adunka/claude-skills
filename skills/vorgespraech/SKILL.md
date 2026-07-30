@@ -39,11 +39,14 @@ Transkription läuft lokal mit WhisperX, es wird nichts hochgeladen. WhisperX li
 /Users/robert/.venvs/whisperx/bin/whisperx "<Audiodatei>" \
   --model large-v3-turbo --language de \
   --device cpu --compute_type int8 \
+  --vad_method silero \
   --diarize --min_speakers 2 --max_speakers 2 \
   -f srt --output_dir "/Users/robert/Documents/TCG-Ordner/_Adunka/Vorgespraeche/"
 ```
 
 - **Warum WhisperX statt `whisper`:** es liefert Sprechertrennung (Diarisierung über pyannote) und satzgenaue Zeitmarken durch Alignment. Das blanke `whisper`-CLI kann beides nicht.
+- **`--vad_method silero` ist Pflicht, nicht Geschmackssache.** WhisperX transkribiert nur, was seine Sprachaktivitätserkennung als Sprache markiert. Die voreingestellte pyannote-VAD schneidet auf Roberts Aufnahmen ganze Passagen weg — bei einer geprüften 26-Minuten-Datei fehlten **22 Prozent des Textes** ersatzlos, darunter inhaltlich wichtige Stellen wie der Name der Geschäftseinheit des Interessenten. Das Absenken von `--vad_onset`/`--vad_offset` behebt es **nicht**; Silero schon. Ohne diesen Schalter ist das Transkript unvollständig, und zwar unauffällig: die Lücken sind im Fließtext nicht zu sehen.
+- **Plausibilitätsprüfung nach dem Lauf:** grob 130 bis 140 Wörter pro Gesprächsminute sind normal. Deutlich weniger heißt, dass die VAD Text verschluckt hat. Im Zweifel gegen einen Lauf des blanken `whisper` gegenprüfen, das keine VAD-Vorfilterung macht.
 - **Modell:** immer `large-v3-turbo`.
 - **Sprecherzahl:** **Robert vor dem Lauf fragen, wie viele Personen auf der Aufnahme sprechen.** Er kann das nach dem Gespräch sagen, auch wenn es vorher nicht feststand. Regelfall sind zwei, es kommen aber Gespräche mit mehr Teilnehmern vor. Die genannte Zahl in `--min_speakers` und `--max_speakers` eintragen — eine feste Vorgabe verbessert das Ergebnis deutlich. Antwortet er nicht oder ist er unsicher, beide Parameter weglassen und pyannote schätzen lassen; dann aber im Ergebnis prüfen, ob die Zahl der gefundenen Sprecher plausibel ist. **Nicht** auf einen kurzen Ausschnitt anwenden, in dem eine Person kaum spricht: das Clustering teilt dann den dominanten Sprecher in zwei auf, statt den stillen zu finden.
 - **Zugang:** die Diarisierung lädt `pyannote/speaker-diarization-community-1`, ein zugangsbeschränktes Modell. Roberts HuggingFace-Token liegt in `~/.cache/huggingface/`, WhisperX findet ihn selbst. Die Warnung `No --hf_token provided` im Log ist irreführend und kann ignoriert werden, solange der Lauf weiterläuft.
@@ -51,6 +54,7 @@ Transkription läuft lokal mit WhisperX, es wird nichts hochgeladen. WhisperX li
 - **Laufzeit:** rund drei Viertel der Aufnahmedauer auf CPU (26 Minuten Audio ≈ 19 Minuten Rechenzeit). Immer im Hintergrund starten und nicht blockierend warten. Vorab mit `ffprobe` die Dauer ermitteln und Robert eine Zeitschätzung nennen. Die Ausgabe wird gepuffert, wenn sie nicht auf ein Terminal geht — eine leere Logdatei heißt nicht, dass der Lauf hängt. Fortschrittsbalken beim Filtern per `grep -viE "%\||MB/s"` unterdrücken, sonst ist das Log unlesbar.
 - **Ergebnis:** WhisperX legt `<Basisname>.srt` im Zielordner ab, mit `[SPEAKER_00]`-Präfix je Segment. Diese Datei ist das **Roh-Transkript** und geht so in Schritt 1 und 2. In Schritt 2 wird sie auf `..._raw.txt` umbenannt (Inhalt unverändert, inklusive Zeitmarken und Sprecherlabels); die von WhisperX erzeugte Datei danach entfernen, damit im Ordner keine Dublette liegt.
 - **Datum:** Audiodateinamen enthalten meist kein Datum. Dann das Änderungsdatum der Audiodatei als Gesprächsdatum verwenden, sonst heute.
+- **Halluzinierte Schlusssätze:** Whisper erfindet auf Stille am Dateiende gern einen Satz ("Und diese Show wird schon toll sein.", "Vielen Dank fürs Zuschauen."). Steht am Ende ein Satz, der nicht zum Gespräch passt, ersatzlos streichen — das ist kein Hörfehler, sondern Erfindung.
 
 ### Was die Diarisierung leistet und was nicht
 
