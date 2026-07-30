@@ -33,56 +33,23 @@ Diesen Schritt überspringen, wenn bereits ein Transkript vorliegt.
 
 **Erst prüfen, ob es eine Aufzeichnung der Konferenzplattform gibt.** Teams und Zoom zeichnen pro Teilnehmer eine eigene Tonspur auf, ihre Transkripte haben deshalb eine exakte Sprecherzuordnung statt einer geschätzten. Wenn ein solches Transkript vorliegt, ist es der bessere Ausgangspunkt — dann Schritt 0 überspringen. Robert nutzt es selbst, wenn er es hat; meist hat er nur eine Audiodatei.
 
-Transkription läuft lokal mit WhisperX, es wird nichts hochgeladen. WhisperX liegt in einer eigenen virtuellen Umgebung:
+Transkription läuft lokal mit Whisper, es wird nichts hochgeladen:
 
 ```bash
-/Users/robert/.venvs/whisperx/bin/whisperx "<Audiodatei>" \
-  --model large-v3-turbo --language de \
-  --device cpu --compute_type int8 \
-  --vad_method silero \
-  --diarize --min_speakers 2 --max_speakers 2 \
-  -f srt --output_dir "/Users/robert/Documents/TCG-Ordner/_Adunka/Vorgespraeche/"
+whisper "<Audiodatei>" --model large-v3-turbo --language de --output_format srt --output_dir "/Users/robert/Documents/TCG-Ordner/_Adunka/Vorgespraeche/"
 ```
 
-- **Warum WhisperX statt `whisper`:** es liefert Sprechertrennung (Diarisierung über pyannote) und satzgenaue Zeitmarken durch Alignment. Das blanke `whisper`-CLI kann beides nicht.
-- **`--vad_method silero` ist Pflicht, nicht Geschmackssache.** WhisperX transkribiert nur, was seine Sprachaktivitätserkennung als Sprache markiert, und schneidet dabei Text weg. An einer geprüften 26-Minuten-Aufnahme gemessen (blankes `whisper` = 3528 Wörter als Referenz, weil es keine VAD-Vorfilterung macht):
-  - pyannote (Voreinstellung): 2738 Wörter, **22 % fehlen**
-  - pyannote mit abgesenkten `--vad_onset`/`--vad_offset`: bringt nichts
-  - **silero: 3065 Wörter, 13 % fehlen** — deutlich besser, aber nicht vollständig
-
-### Wichtig: WhisperX allein reicht für dieses Skill nicht
-
-Auch mit Silero fehlen rund 13 Prozent, und zwar unauffällig — die Lücken sind im Fließtext nicht zu sehen, der Text liest sich glatt weiter. Bei einem Vorgespräch, das als Aktenlage dient, ist das zu viel. **Deshalb zwei Läufe:**
-
-1. **Blankes `whisper` für den Text** — vollständig, aber ohne Sprecher und mit groben Zeitmarken:
-   ```bash
-   export SSL_CERT_FILE=$(/Library/Frameworks/Python.framework/Versions/3.14/bin/python3 -c "import certifi;print(certifi.where())")
-   whisper "<Audiodatei>" --model large-v3-turbo --language de --output_format txt --output_dir "<Zielordner>"
-   ```
-   Dieses Ergebnis ist das **Roh-Transkript** für Schritt 2 und die Textgrundlage für Schritt 1.
-2. **WhisperX für Sprecher und Zeitmarken** mit dem Befehl oben. Aus diesem Lauf werden **nur** die Sprecherzuordnung und die Zeitstempel übernommen, nie der Text.
-
-Beide Läufe können nacheinander im Hintergrund laufen (zusammen grob eine Stunde bei 26 Minuten Audio). Beim Zusammenführen die Blöcke des bereinigten Textes der Reihe nach gegen die WhisperX-Segmente matchen; für Blöcke ohne Treffer die Zeit zwischen den benachbarten Treffern interpolieren statt hochzuzählen, sonst driftet das Ende weg. **Vor dem Speichern prüfen, dass der Text Wort für Wort unverändert ist** und sich nur Zeitmarken ergänzt haben.
-
-Wenn Robert ausdrücklich nur schnell ein Ergebnis will, reicht der WhisperX-Lauf allein — dann aber dazusagen, dass das Transkript unvollständig ist.
-
-- **Plausibilitätsprüfung nach jedem Lauf:** grob 130 bis 140 Wörter pro Gesprächsminute sind normal. Deutlich weniger heißt, dass Text verschluckt wurde.
+- **Ein Lauf, nicht zwei.** Das blanke `whisper` transkribiert vollständig, kann aber keine Sprecher unterscheiden. Die Zuordnung wird in Schritt 1 aus dem Inhalt erschlossen — bei einem Vorgespräch ist das gut möglich, weil Robert als TRIZ-Experte und Anbieter inhaltlich klar vom Interessenten zu trennen ist. Das ist Roberts ausdrückliche Entscheidung: Sprechererkennung ist den Mehraufwand hier nicht wert.
 - **Modell:** immer `large-v3-turbo`.
-- **Sprecherzahl:** **Robert vor dem Lauf fragen, wie viele Personen auf der Aufnahme sprechen.** Er kann das nach dem Gespräch sagen, auch wenn es vorher nicht feststand. Regelfall sind zwei, es kommen aber Gespräche mit mehr Teilnehmern vor. Die genannte Zahl in `--min_speakers` und `--max_speakers` eintragen — eine feste Vorgabe verbessert das Ergebnis deutlich. Antwortet er nicht oder ist er unsicher, beide Parameter weglassen und pyannote schätzen lassen; dann aber im Ergebnis prüfen, ob die Zahl der gefundenen Sprecher plausibel ist. **Nicht** auf einen kurzen Ausschnitt anwenden, in dem eine Person kaum spricht: das Clustering teilt dann den dominanten Sprecher in zwei auf, statt den stillen zu finden.
-- **Zugang:** die Diarisierung lädt `pyannote/speaker-diarization-community-1`, ein zugangsbeschränktes Modell. Roberts HuggingFace-Token liegt in `~/.cache/huggingface/`, WhisperX findet ihn selbst. Die Warnung `No --hf_token provided` im Log ist irreführend und kann ignoriert werden, solange der Lauf weiterläuft.
+- **Zeitstempel:** `--output_format srt`. Die Zeitmarken werden gebraucht, weil die `_corrected`-Dateien das Format `Sprechername / mm:ss / Text` haben.
 - **Sprache:** `--language de` bei deutschen Gesprächen, `--language en` bei englischen. Wenn unklar, den Parameter weglassen.
-- **Laufzeit:** rund drei Viertel der Aufnahmedauer auf CPU (26 Minuten Audio ≈ 19 Minuten Rechenzeit). Immer im Hintergrund starten und nicht blockierend warten. Vorab mit `ffprobe` die Dauer ermitteln und Robert eine Zeitschätzung nennen. Die Ausgabe wird gepuffert, wenn sie nicht auf ein Terminal geht — eine leere Logdatei heißt nicht, dass der Lauf hängt. Fortschrittsbalken beim Filtern per `grep -viE "%\||MB/s"` unterdrücken, sonst ist das Log unlesbar.
-- **Ergebnis:** WhisperX legt `<Basisname>.srt` im Zielordner ab, mit `[SPEAKER_00]`-Präfix je Segment. Diese Datei ist das **Roh-Transkript** und geht so in Schritt 1 und 2. In Schritt 2 wird sie auf `..._raw.txt` umbenannt (Inhalt unverändert, inklusive Zeitmarken und Sprecherlabels); die von WhisperX erzeugte Datei danach entfernen, damit im Ordner keine Dublette liegt.
+- **Laufzeit:** grob die Länge der Aufnahme bis zum Doppelten davon auf CPU. Immer im Hintergrund starten und nicht blockierend warten. Vorab mit `ffprobe` die Dauer ermitteln und Robert eine Zeitschätzung nennen. Whisper puffert seine Ausgabe, wenn sie nicht auf ein Terminal geht — eine leere Logdatei heißt nicht, dass der Lauf hängt.
+- **Ergebnis:** Whisper legt `<Basisname>.srt` im Zielordner ab. Diese Datei ist das **Roh-Transkript** und geht so in Schritt 1 und 2. In Schritt 2 wird sie auf `..._raw.txt` umbenannt (Inhalt unverändert, inklusive Zeitmarken); die von Whisper erzeugte Datei danach entfernen, damit im Ordner keine Dublette liegt.
 - **Datum:** Audiodateinamen enthalten meist kein Datum. Dann das Änderungsdatum der Audiodatei als Gesprächsdatum verwenden, sonst heute.
+- **Plausibilitätsprüfung:** grob 130 bis 140 Wörter pro Gesprächsminute sind normal. Deutlich weniger heißt, dass etwas schiefgelaufen ist.
 - **Halluzinierte Schlusssätze:** Whisper erfindet auf Stille am Dateiende gern einen Satz ("Und diese Show wird schon toll sein.", "Vielen Dank fürs Zuschauen."). Steht am Ende ein Satz, der nicht zum Gespräch passt, ersatzlos streichen — das ist kein Hörfehler, sondern Erfindung.
 
-### Was die Diarisierung leistet und was nicht
-
-Sie liefert `SPEAKER_00` und `SPEAKER_01`, keine Namen. Welches Label Robert ist, einmal am Gesprächsanfang aus dem Inhalt bestimmen und dann durchziehen — die Zuordnung bleibt über die ganze Aufnahme stabil.
-
-**Verlässlich** bei längeren Redebeiträgen. **Unzuverlässig bei kurzen Einwürfen** ("Ah, okay", "Ja, genau", "Mhm") — die landen oft beim falschen Sprecher. Bei einer geprüften 26-Minuten-Aufnahme waren rund 8 Prozent der Segmente falsch zugeordnet, fast ausschließlich solche Kurzeinwürfe. In Schritt 1 deshalb die kurzen Segmente inhaltlich gegenlesen und korrigieren; die langen Blöcke kann man übernehmen.
-
-Aus den SRT-Zeitmarken den **Startzeitpunkt jedes Sprecherblocks als `mm:ss`** übernehmen, damit das bereinigte Transkript dasselbe Format hat wie die von Transkriptionsdiensten erzeugten Dateien:
+Whisper liefert keine Sprecherkennung, der Text läuft als ein Block durch. Aus den SRT-Zeitmarken den **Startzeitpunkt jedes Sprecherblocks als `mm:ss`** übernehmen, damit das bereinigte Transkript dasselbe Format hat wie die von Transkriptionsdiensten erzeugten Dateien:
 
 ```
 Robert Adunka
@@ -90,11 +57,32 @@ Robert Adunka
 So, wunderschönen guten Morgen.
 ```
 
-**Falls WhisperX fehlt** (venv gelöscht o. ä.): Robert darauf hinweisen statt zu improvisieren. Notbehelf ist das blanke `whisper`-CLI ohne Sprechertrennung — das braucht dann aber `SSL_CERT_FILE`, weil die Modell-Downloads sonst an der Zertifikatsprüfung scheitern (`CERTIFICATE_VERIFY_FAILED`, selbstsigniertes Zertifikat in der Kette):
+### Sprechererkennung mit WhisperX — nur auf Anforderung
+
+WhisperX ist eingerichtet (`~/.venvs/whisperx/`) und kann Sprecher trennen, wird aber **standardmäßig nicht verwendet**. Es lohnt sich nur, wenn die Zuordnung aus dem Inhalt schwerfällt — etwa bei mehr als zwei Teilnehmern oder wenn sich die Rollen inhaltlich nicht klar trennen lassen. Einsatz nur, wenn Robert es verlangt.
+
+Wenn es zum Einsatz kommt, ist das Wichtigste: **WhisperX allein liefert kein vollständiges Transkript.** Seine Sprachaktivitätserkennung schneidet Text weg, gemessen an derselben 26-Minuten-Aufnahme (blankes `whisper` = 3528 Wörter als Referenz):
+
+- pyannote (Voreinstellung): 2738 Wörter, 22 % fehlen
+- pyannote mit abgesenkten `--vad_onset`/`--vad_offset`: bringt nichts
+- `--vad_method silero`: 3065 Wörter, 13 % fehlen
+
+Die Lücken sind im Fließtext nicht zu sehen. Deshalb in dem Fall **den Text aus dem Whisper-Lauf behalten** und aus WhisperX nur Sprecherlabels und Zeitmarken übernehmen:
 
 ```bash
-export SSL_CERT_FILE=$(/Library/Frameworks/Python.framework/Versions/3.14/bin/python3 -c "import certifi;print(certifi.where())")
+/Users/robert/.venvs/whisperx/bin/whisperx "<Audiodatei>" \
+  --model large-v3-turbo --language de \
+  --device cpu --compute_type int8 \
+  --vad_method silero \
+  --diarize --min_speakers 2 --max_speakers 2 \
+  -f srt --output_dir "<Zielordner>"
 ```
+
+- **Sprecherzahl:** Robert fragen, wie viele Personen auf der Aufnahme sprechen — er kann das nach dem Gespräch sagen. Die Zahl in `--min_speakers`/`--max_speakers` eintragen. Bei Unsicherheit beide weglassen und die gefundene Zahl auf Plausibilität prüfen. **Nicht** auf kurze Ausschnitte anwenden, in denen eine Person kaum spricht: das Clustering teilt dann den dominanten Sprecher in zwei auf.
+- **Zugang:** lädt `pyannote/speaker-diarization-community-1`, ein zugangsbeschränktes Modell. Roberts HuggingFace-Token liegt in `~/.cache/huggingface/`. Die Warnung `No --hf_token provided` ist irreführend und kann ignoriert werden.
+- **Laufzeit:** mit Silero rund 36 Minuten für 26 Minuten Audio, also länger als der reine Whisper-Lauf. Fortschrittsbalken per `grep -viE "%\||MB/s"` filtern.
+- **Güte:** lange Redebeiträge sitzen zuverlässig, die Label-Zuordnung bleibt über die ganze Aufnahme stabil. Kurze Einwürfe ("Ah, okay", "Ja, genau", "Mhm") landen oft beim falschen Sprecher — rund 8 Prozent der Segmente. Die kurzen also gegenlesen.
+- **Zusammenführen:** Blöcke des bereinigten Textes der Reihe nach gegen die WhisperX-Segmente matchen; für Blöcke ohne Treffer die Zeit zwischen den benachbarten Treffern **interpolieren**, nicht hochzählen, sonst läuft das Ende über die Aufnahmelänge hinaus. Vor dem Speichern prüfen, dass der Text Wort für Wort unverändert ist und nur Zeitmarken dazugekommen sind.
 
 ## Schritt 1 — Transkript bereinigen
 
@@ -110,7 +98,7 @@ Lies das Roh-Transkript. Wende **nur die minimal nötigen Korrekturen** für Spe
 - Firmen-/Methodennamen: "Trismastery Hub"-Varianten → TRIZ Mastery Hub; "Ideasio/Ideation Workbench" → Ideation Workbench; "Kepner Trigo" etc. → Kepner-Tregoe
 
 **Standardfall ist die leichte Korrektur oben.** Nur wenn das Transkript es klar erfordert, zusätzlich:
-- **Sprecher-Rekonstruktion aus dem Kontext**, falls die Transkriptionssoftware die Sprecher vertauscht oder innerhalb der Blöcke zusammengemischt hat. Dann anhand des Inhalts zuordnen (wer ist Robert = TRIZ-Experte/Gastgeber, wer der Interessent) und zusammengefallene Redebeiträge trennen. Bei Audio-Input aus Schritt 0 ist das kein Sonderfall, sondern immer fällig: die `SPEAKER_0x`-Labels in Namen übersetzen und die kurzen Einwürfe gegenlesen, weil die Diarisierung genau dort danebenliegt.
+- **Sprecher-Rekonstruktion aus dem Kontext**, falls die Transkriptionssoftware die Sprecher vertauscht oder innerhalb der Blöcke zusammengemischt hat. Dann anhand des Inhalts zuordnen (wer ist Robert = TRIZ-Experte/Gastgeber, wer der Interessent) und zusammengefallene Redebeiträge trennen. Bei Audio-Input aus Schritt 0 ist das kein Sonderfall, sondern immer fällig, weil Whisper keine Sprecher kennzeichnet: Der Text kommt als durchlaufender Block, und die Redebeiträge müssen inhaltlich aufgeteilt und zugeordnet werden. Anhaltspunkte: Robert stellt die Fragen zu Bedarf und Zielsetzung, nennt Preise, Kursaufbau und Termine; der Interessent beschreibt Firma, Aufgabe und Randbedingungen. Kurze Einwürfe ("Mhm", "Ja, genau") gehören meist dem jeweils Zuhörenden. Wurde ausnahmsweise WhisperX benutzt, stattdessen dessen `SPEAKER_0x`-Labels übersetzen und nur die kurzen Einwürfe gegenlesen.
 - **Fremdsprachige oder irrelevante Teile am Ende entfernen** (z. B. ein angehängtes internes Gespräch mit der Assistentin), wenn Robert das anmerkt oder es offensichtlich nicht zum Gespräch gehört.
 
 Diese beiden Zusatzschritte sind die Ausnahme, nicht die Regel. Halte das bereinigte Transkript für Schritt 2 bereit.
