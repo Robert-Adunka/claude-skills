@@ -96,6 +96,8 @@ Grundlage ist der Prompt in der Vault-Notiz `Prompts/Transkript korrigieren, z.B
 ### 10. Korrigiertes Transkript hochladen (Robert)
 Robert ersetzt im Circle-Editor das Transkript des Videos durch `captions_corrected.vtt`.
 
+"Make downloadable" schaltet Robert nur für den Transkript-Download kurz ein und danach bewusst wieder aus, damit die Aufzeichnung nur im Hub zu sehen ist und Members an den Hub gebunden bleiben. Ein ausgeschalteter Download ist also gewollt, nicht als Problem melden.
+
 ### 11. Teaser erstellen (du)
 Starte den Skill `youtube-teaser` mit `captions_corrected.vtt`, Ankündigungstext, Post-URL und Aufnahmedatum. Alles liegt schon vor, also keine Rückfragen nach diesen Daten. Der Skill wartet nach der Vorauswahl auf Roberts Wahl der Teaserstelle. Fallback, falls der Skill nicht verfügbar ist: Prompt aus der Vault-Notiz `Prompts/Teaser für Video erstellen.md`.
 
