@@ -120,6 +120,8 @@ Special Event on October 5th at 3:00 PM CET with Carmen Lehner & Jens Träger: T
 ```
 Also `Special Event on <Monat> <Tag mit st/nd/rd/th> at <h:mm AM/PM> CET with <Presenter>: <Kurztitel>`. Kurztitel ist der Teil des Event-Titels vor einem Gedankenstrich oder Untertitel. Immer "CET" schreiben, auch in der Sommerzeit.
 
+Direkt darunter den Link zum Event als eigenen Codeblock liefern, damit Robert ihn ins Banner pasten kann. Die URL steht im Feld `url` aus `list_events`/`get_event`, Format `https://triz-mastery-hub.circle.so/c/live-sessions/<event-slug>`.
+
 ### 14. Punkte für Presenter (du taggst, Robert löst aus)
 Presenter per `search_community_member` finden, Treffer bestätigen lassen, dann Tag "Presentator Award" (297090) setzen. Robert startet danach die Bulk Action "Reward Presenter", die den Tag selbst wieder entfernt. Nichts nachputzen. Die DM verweist auf die Aufzeichnung in der Video Library, deshalb diesen Schritt erst machen, wenn der Recording-Post veröffentlicht ist (Schritte 4 bis 7).
 
