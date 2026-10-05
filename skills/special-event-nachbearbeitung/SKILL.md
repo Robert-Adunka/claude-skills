@@ -70,6 +70,7 @@ Hol die Ankündigung aus dem Event in Live Sessions (`list_events`/`get_event`).
 - Titel: `<Presenter>: <Vortragstitel>`
 - Body: Beschreibungstext aus der Ankündigung, danach Überschrift H3 `Presentation slides:`
 - Status: **draft**
+- Immer explizit mitgeben: `hide_meta_info: true` (Robert soll nicht als Autor angezeigt werden), `is_comments_enabled: true` und `is_liking_enabled: true` (Members sollen Notizen und Reaktionen hinterlassen können). Ohne diese Angaben stellt Circle Kommentare und Likes aus und zeigt die Metainfo.
 
 Vorher Titel und Text zeigen und das OK abwarten. Erst dann per `create_post` (space_id 1889732, `tiptap_body`) anlegen. Post-URL in die Statusdatei schreiben.
 
