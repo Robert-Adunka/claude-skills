@@ -18,7 +18,7 @@ Die Checkliste stammt aus Roberts Obsidian-Notiz `TRIZ-Mastery-Hub/TRIZ Mastery 
 - Circle-Space für Aufzeichnungen: Video Library, ID 1889732 (früher "Special Events Recordings")
 - Tag "Presentator Award": ID 297090
 - Tag "Attended event": ID 262172
-- Bulk Action "Reward Presenter": vergibt 50 Punkte
+- Bulk Action "Reward Presenter": vergibt 50 Punkte, schickt eine Dank-DM mit Link zur Video Library und entfernt den Tag 297090 wieder
 - Bulk Action "Reward Event Attendence": vergibt 5 Punkte, schickt eine DM und entfernt den Tag 262172 wieder
 
 Der Circle MCP kann Bulk Actions **nicht** auslösen. Die startet Robert immer selbst im Backend. Biete nicht an, sie über den Browser zu klicken.
@@ -114,7 +114,7 @@ Titel, Beschreibung und Tags für YouTube nicht in die Karte, die lädt Robert s
 Hol per `list_events` das nächste Special Event in Live Sessions und nenne Titel, Datum und die passende `*EventCover_1024x366.png` bzw. `*Event-OpenGraph.png` aus dessen Event-Ordner. Das Banner selbst tauscht Robert im Backend.
 
 ### 14. Punkte für Presenter (du taggst, Robert löst aus)
-Presenter per `search_community_member` finden, Treffer bestätigen lassen, dann Tag "Presentator Award" (297090) setzen. Robert startet danach die Bulk Action "Reward Presenter". Der Workflow entfernt den Tag nicht selbst: Frag Robert nach dem Auslösen, ob du den Tag wieder abnehmen sollst, damit der Presenter beim nächsten Mal nicht doppelt Punkte bekommt.
+Presenter per `search_community_member` finden, Treffer bestätigen lassen, dann Tag "Presentator Award" (297090) setzen. Robert startet danach die Bulk Action "Reward Presenter", die den Tag selbst wieder entfernt. Nichts nachputzen. Die DM verweist auf die Aufzeichnung in der Video Library, deshalb diesen Schritt erst machen, wenn der Recording-Post veröffentlicht ist (Schritte 4 bis 7).
 
 ### 15. Punkte für Teilnehmer (du taggst, Robert löst aus)
 Aus der Teilnehmer-CSV (`room_*_participants_list.csv`, Spalte `ID` ist die Community-Member-ID) allen den Tag "Attended event" (262172) geben, **außer Robert Adunka und dem Presenter**. Danach nur melden, wie viele getaggt wurden und wer bewusst ausgelassen wurde. Robert startet die Bulk Action "Reward Event Attendence", die den Tag selbst wieder entfernt. Nichts nachputzen.
