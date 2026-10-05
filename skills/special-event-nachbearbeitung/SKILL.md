@@ -101,17 +101,21 @@ Starte den Skill `youtube-teaser` mit `captions_corrected.vtt`, Ankündigungstex
 Den finalen Teaser **im Chat** als einen Codeblock zum Kopieren ausgeben, so wie `youtube-teaser` ihn liefert, damit Robert ihn direkt weiterverwenden kann. Zusätzlich als `teaser.md` in den Event-Ordner speichern.
 
 ### 12. Trello-Karte für Martin Helm (du schreibst, Robert legt an)
-Text für die Karte in einem Codeblock, ohne Tabellen, damit Robert ihn kopieren kann:
-- Kartentitel: `Teaser: <Presenter>: <Titel>`
-- Quelle: Dateiname der Schnittfassung und Pfad zum Event-Ordner
-- Ausschnitt: Start, Ende, Länge, Ein- und Ausstiegswortlaut
-- Onscreen Overlays mit Zeitstempeln als Liste
-- Thumbnail-Texte
-- CTA
-Titel, Beschreibung und Tags für YouTube nicht in die Karte, die lädt Robert selbst hoch, außer er will es anders.
+Die Karte bekommt **den kompletten Inhalt von `teaser.md`**, unverändert, nicht gekürzt und nicht umsortiert. Gib ihn noch einmal als einen Codeblock zum Kopieren aus, ohne Tabellen:
+- Erste Zeile (Kartentitel): `Teaser: <Presenter>: <Titel>`
+- Danach der vollständige Inhalt von `teaser.md`, inklusive YouTube-Titel, Beschreibung und Tags
+- Am Ende: Dateiname der Schnittfassung und Pfad zum Event-Ordner
+
+Keine eigene Auswahl oder Neuformulierung für die Karte bauen. Robert kopiert den Block 1:1 nach Trello.
 
 ### 13. Banner im Feed (Robert)
-Hol per `list_events` das nächste Special Event in Live Sessions und nenne Titel, Datum und die passende `*EventCover_1024x366.png` bzw. `*Event-OpenGraph.png` aus dessen Event-Ordner. Das Banner selbst tauscht Robert im Backend.
+Hol per `list_events` das nächste Special Event in Live Sessions und nenne (auch eins am selben Tag, das nach dem nachbearbeiteten Event beginnt; nach Startzeit sortieren, nicht nur nach Datum) Titel, Datum und die passende `*EventCover_1024x366.png` bzw. `*Event-OpenGraph.png` aus dessen Event-Ordner. Das Banner selbst tauscht Robert im Backend.
+
+Dazu immer den Bannertext als Codeblock zum Kopieren liefern, auf Englisch, Uhrzeit in deutscher Zeit (Europe/Berlin) mit "CET" dahinter, damit die Teilnehmer die Zeitzone kennen, genau in diesem Stil:
+```
+Special Event on October 5th at 3:00 PM CET with Carmen Lehner & Jens Träger: Think. Solve. Create.
+```
+Also `Special Event on <Monat> <Tag mit st/nd/rd/th> at <h:mm AM/PM> CET with <Presenter>: <Kurztitel>`. Kurztitel ist der Teil des Event-Titels vor einem Gedankenstrich oder Untertitel. Immer "CET" schreiben, auch in der Sommerzeit.
 
 ### 14. Punkte für Presenter (du taggst, Robert löst aus)
 Presenter per `search_community_member` finden, Treffer bestätigen lassen, dann Tag "Presentator Award" (297090) setzen. Robert startet danach die Bulk Action "Reward Presenter", die den Tag selbst wieder entfernt. Nichts nachputzen. Die DM verweist auf die Aufzeichnung in der Video Library, deshalb diesen Schritt erst machen, wenn der Recording-Post veröffentlicht ist (Schritte 4 bis 7).
