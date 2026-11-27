@@ -34,6 +34,7 @@ Read the raw transcript file. Apply **minimum necessary corrections** for speech
 - "Capnot-Rego", "Kepnot Rego", "Kepner Trigo", "Cat Noctrigo", "Camp Notre Dame", "Catnod tree go", "Cat Nachigo", "Kepno Chigo", "Ketnotrigo" → Kepner-Tregoe
 - "Chainin" → Shainin (competing problem-solving methodology)
 - "Trismastery Hub", "Trismas Rehub", "Trist Mastery Hub", "Trismastry Hub" → TRIZ Mastery Hub
+- "CC top", "CC TOP", "C-C-Top" etc. → ccTOPP (Creative and Collaborative TRIZ Open Prompt Project, Robert's prompt group; a pun on the band "ZZ Top" stays as is)
 
 **Place name corrections:**
 - "Petra Zawotsk", "Petro Zavots" etc. → Petrozavodsk
